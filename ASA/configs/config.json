@@ -2,7 +2,7 @@
   "Timing": {
     "PollInterval_Seconds": 2,
     "SpawnSettle_Seconds": 3,
-    "GroupRecheck_Seconds": 30
+    "GroupRecheck_Seconds": 10
   },
   "StackGroups": true,
   "Groups": [

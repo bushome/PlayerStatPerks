@@ -53,7 +53,7 @@ static void TestParsing()
 	CHECK(Near(s.groups[1].base_stats[Health], 0));    // missing keys default to 0
 	CHECK(s.stack_groups);
 	CHECK(s.perks_command == "/perks");
-	CHECK(s.poll_interval_seconds == 2 && s.spawn_settle_seconds == 3 && s.group_recheck_seconds == 30);
+	CHECK(s.poll_interval_seconds == 2 && s.spawn_settle_seconds == 3 && s.group_recheck_seconds == 10);
 	CHECK(s.warnings.empty());
 }
 

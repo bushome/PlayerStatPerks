@@ -88,7 +88,7 @@ namespace StatPerks
 
 		int poll_interval_seconds = 2;     // how often online players are scanned
 		int spawn_settle_seconds = 3;      // wait after a (re)spawn before applying
-		int group_recheck_seconds = 30;    // how often group membership is re-read (timed groups)
+		int group_recheck_seconds = 10;    // how often group membership is re-read (timed groups)
 
 		std::string perks_command = "/perks";
 		std::string sender = "Perks";

@@ -6,7 +6,7 @@ permanent, tribe or timed groups; a timed group's perks start and stop on their 
 | Folder | Game | Server API (submodule) |
 |---|---|---|
 | [`ASA`](ASA/README.md) | ARK: Survival Ascended | [AsaApi](https://github.com/ArkServerApi/AsaApi) at `ASA/extern/AsaApi` |
-| `ASE` | ARK: Survival Evolved | Not ported yet. Will use [ArkServerApi (AseApi)](https://github.com/ArkServerApi/AseApi) at `ASE/extern/AseApi` |
+| [`ASE`](ASE/README.md) | ARK: Survival Evolved | [ArkServerApi (AseApi)](https://github.com/ArkServerApi/AseApi) at `ASE/extern/AseApi` |
 
 Each folder is a self-contained Visual Studio solution. Clone with submodules:
 
@@ -20,6 +20,8 @@ or, in an existing clone:
 git submodule update --init --recursive
 ```
 
-The perk logic (`src/PerkLogic.h`), the tests and the configs are meant to be the same in both folders;
-only `src/Main.cpp`, `src/PermissionsApi.h` and the project files differ by API. Build and install steps
+The perk logic (`src/PerkLogic.h`), the tests and the configs are the same in both folders; only
+`src/Main.cpp`, `src/PermissionsApi.h`, `lib/Permissions.lib` and the project files differ by API. One
+behavioural difference: the ASA Permissions plugin reports group changes, so a newly added group applies
+within a couple of seconds there; the ASE config instead re-reads groups on every poll for the same result. Build and install steps
 are in each folder's README.

@@ -11,8 +11,9 @@ There are no gameplay hooks. AsaApi's one-second timer drives a scan of the onli
 `PollInterval_Seconds`. A player's stats are applied:
 
 1. after a login or respawn, once `SpawnSettle_Seconds` have passed;
-2. when their groups change (a timed group starts or expires, a group is added or removed), checked
-   every `GroupRecheck_Seconds`;
+2. when their groups change. A group being added or removed (including `permissions.addtimed` from an
+   ArkShop kit) is reported by Permissions and picked up on the next poll, so no reload is needed. A timed
+   group expiring is caught by the recheck every `GroupRecheck_Seconds`;
 3. when the game has overwritten the values this plugin wrote.
 
 For each managed stat the plugin writes the base value, the per-level gain and the resulting maximum.
@@ -65,7 +66,7 @@ the latest one from Microsoft.
    The folder and the DLL must keep the same name.
 3. Permissions must be installed and working on that server.
 4. Start the server. `ArkApi.log` shows `Config loaded: ...` when the plugin is ready, then
-   `Applied [Default|...] to <EOS ID>` as players join.
+   `Applied [Default, ...] to <EOS ID>` as players join.
 
 To update a running server, drop the new build in as `PlayerStatPerks.dll.arkapi` (the build produces that
 copy too). If automatic plugin reloading is enabled in AsaApi's own `config.json`, AsaApi swaps it in and
@@ -86,7 +87,7 @@ All optional, whole seconds.
 |---|---|---|
 | `PollInterval_Seconds` | `2` | How often online players are scanned. At least 1. |
 | `SpawnSettle_Seconds` | `3` | Wait after a login or respawn before applying. |
-| `GroupRecheck_Seconds` | `30` | How often each player's groups are read again. This is the delay before a timed group starting or expiring takes effect. At least 1. |
+| `GroupRecheck_Seconds` | `10` | How often each player's groups are read again. This is the delay before a timed group expiring takes effect (a group being added is reported by Permissions and applies on the next poll). At least 1. |
 
 ### Groups
 
@@ -125,7 +126,7 @@ current groups without a respec.
 | Command | Where | What it does |
 |---|---|---|
 | `/perks` | Chat (name set by `Commands.ShowPerks`) | Shows the player their groups, multipliers and configured bases. |
-| `PlayerStatPerks.Reload` | RCON, or the in-game console as an admin (`cheat PlayerStatPerks.Reload`) | Re-reads `config.json` and recalculates online players on the next poll. If the file has a mistake the old settings stay active and the error is reported. |
+| `PlayerStatPerks.Reload` | RCON, or the in-game console as an admin (`cheat PlayerStatPerks.Reload`) | Re-reads `config.json` and recalculates online players on the next poll. If the file has a mistake the old settings stay active and the error is reported. Only needed after editing the config, not after group changes, so ArkShop kits don't need to run it. |
 
 ## Troubleshooting
 
@@ -133,7 +134,8 @@ current groups without a respec.
   `PlayerStatPerks.Reload`. Until then player stats are left alone.
 - **The plugin fails to load with error 126.** `Permissions.dll` could not be found when it was first
   needed. Check Permissions is installed in its own plugin folder and loads without errors.
-- **Stats don't change after a timed group is added.** Wait for `GroupRecheck_Seconds`, then check
+- **Stats don't change after a timed group is added.** `ArkApi.log` should show `Listening for
+  Permissions group changes` once after startup; without it, changes are only seen on the recheck. Check
   `/perks` lists the group. If it doesn't, the player is not in that group as far as Permissions knows.
 - **`Config: <group>: unknown multiplier/base stat '...' is ignored`.** A stat name is misspelled; the stat
   keeps its default for that group. The names are listed under Groups above.

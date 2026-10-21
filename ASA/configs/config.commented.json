@@ -17,9 +17,11 @@
     // setting up the new character first.
     "SpawnSettle_Seconds": 3,
 
-    // How often each player's groups are read again from Permissions. This is what picks up a
-    // timed group starting or expiring, or a group added/removed with the Permissions commands.
-    "GroupRecheck_Seconds": 30
+    // How often each player's groups are read again from Permissions. A group being added
+    // (including permissions.addtimed from an ArkShop kit) is picked up on the next poll anyway,
+    // because Permissions reports the change; this recheck is what catches a timed group expiring.
+    // Keep it short for short timed perks. Reading groups is cheap.
+    "GroupRecheck_Seconds": 10
   },
 
   // true: every group the player is in applies, lowest Priority first. Multipliers multiply

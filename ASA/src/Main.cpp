@@ -7,20 +7,23 @@
 // There are no gameplay hooks. AsaApi's one-second timer drives a scan of the online players every
 // PollInterval_Seconds. A player's stats are (re)applied when
 //   * a new character body shows up (login, respawn), after SpawnSettle_Seconds,
-//   * their resolved group set changes (a timed group starts or expires, a group is added or
-//     removed), checked every GroupRecheck_Seconds,
+//   * Permissions reports that their groups changed (e.g. permissions.addtimed), on the next poll,
+//   * their resolved group set differs on the periodic recheck every GroupRecheck_Seconds (this is
+//     what catches a timed group expiring),
 //   * the game has overwritten the values this plugin wrote (fingerprint mismatch).
 // Values are always computed from the class defaults and the server's stat multipliers, never from
 // the live component, so re-applying can never compound and nothing stale survives a save/load.
 //
 // Everything here runs on the game thread (the timer callback and the chat/console/RCON commands),
-// so the globals below need no locking.
+// except the Permissions group-change callback, which only touches the mutex-guarded change list.
 
 #include "API/ARK/Ark.h"
 
 #include <fstream>
+#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "PermissionsApi.h"
@@ -55,6 +58,50 @@ namespace
 		std::array<float, StatCount> expected_base{};
 	};
 	std::unordered_map<std::string, PlayerState> g_players;   // key: EOS ID
+
+	// Group-change notifications from Permissions. Permissions may call back from its own worker
+	// thread, so the callback only records who changed; the next poll (game thread) acts on it.
+	constexpr const char* kGroupCallbackId = PROJECT_NAME "_GroupUpdated";
+	bool g_group_callback_subscribed = false;
+	std::mutex g_changed_mutex;
+	std::unordered_set<std::string> g_changed_players;
+	bool g_changed_everyone = false;
+
+	void OnPermissionGroupUpdated(const FString& eos_id, int /*tribe_id*/)
+	{
+		std::lock_guard<std::mutex> lock(g_changed_mutex);
+		if (eos_id.IsEmpty())
+			g_changed_everyone = true;   // a tribe's groups changed; recheck all online players
+		else
+			g_changed_players.insert(eos_id.ToString());
+	}
+
+	// Permissions.dll is delay-loaded and AsaApi may load this plugin first, so nothing may call into
+	// it until it is actually in the process.
+	bool PermissionsLoaded()
+	{
+		return GetModuleHandleW(L"Permissions.dll") != nullptr;
+	}
+
+	void SubscribeGroupCallback()
+	{
+		if (g_group_callback_subscribed || !PermissionsLoaded())
+			return;
+		Permissions::SubscribePermissionGroupUpdatedCallback(kGroupCallbackId, &OnPermissionGroupUpdated);
+		g_group_callback_subscribed = true;
+		Log::GetLog()->info("Listening for Permissions group changes");
+	}
+
+	std::string JoinGroups(const Effective& eff)
+	{
+		std::string out;
+		for (const std::string& group : eff.matched_groups)
+		{
+			if (!out.empty()) out += ", ";
+			out += group;
+		}
+		return out;
+	}
 
 	FString ToFString(const std::string& text)
 	{
@@ -251,6 +298,16 @@ namespace
 		for (auto& [id, state] : g_players)
 			state.seen_this_pass = false;
 
+		// Take the group-change notifications collected since the last poll.
+		std::unordered_set<std::string> changed;
+		bool changed_everyone = false;
+		{
+			std::lock_guard<std::mutex> lock(g_changed_mutex);
+			changed.swap(g_changed_players);
+			changed_everyone = g_changed_everyone;
+			g_changed_everyone = false;
+		}
+
 		for (TWeakObjectPtr<APlayerController> weak_controller : world->PlayerControllerListField())
 		{
 			auto* player_controller = static_cast<AShooterPlayerController*>(weak_controller.Get());
@@ -283,8 +340,9 @@ namespace
 				continue;
 
 			bool need_apply = !state.applied || !FingerprintMatches(status, state);
+			const bool groups_changed = changed_everyone || changed.count(eos_id.ToString()) != 0;
 
-			if (need_apply || g_clock - state.last_group_check >= g_settings.group_recheck_seconds)
+			if (need_apply || groups_changed || g_clock - state.last_group_check >= g_settings.group_recheck_seconds)
 			{
 				state.last_group_check = g_clock;
 				Effective eff = Resolve(g_settings, GetGroups(eos_id));
@@ -298,7 +356,7 @@ namespace
 			{
 				state.applied = Apply(character, state);
 				if (state.applied)
-					Log::GetLog()->info("Applied [{}] to {}", state.signature, eos_id.ToString());
+					Log::GetLog()->info("Applied [{}] to {}", JoinGroups(state.effective), eos_id.ToString());
 			}
 		}
 
@@ -315,6 +373,9 @@ namespace
 
 		try
 		{
+			if (!PermissionsLoaded())
+				return;   // nothing to resolve groups with yet
+			SubscribeGroupCallback();
 			Poll();
 		}
 		catch (const std::exception& exception)
@@ -329,7 +390,7 @@ namespace
 
 	void PerksChat(AShooterPlayerController* player_controller, FString* /*message*/, int /*mode*/, int /*platform*/)
 	{
-		if (player_controller == nullptr || !g_settings_loaded)
+		if (player_controller == nullptr || !g_settings_loaded || !PermissionsLoaded())
 			return;
 
 		const FString eos_id = AsaApi::IApiUtils::GetEOSIDFromController(player_controller);
@@ -402,6 +463,9 @@ extern "C" __declspec(dllexport) void Plugin_Init()
 extern "C" __declspec(dllexport) void Plugin_Unload()
 {
 	AsaApi::GetCommands().RemoveOnTimerCallback(kTimerId);
+	if (g_group_callback_subscribed && PermissionsLoaded())
+		Permissions::UnSubscribePermissionGroupUpdatedCallback(kGroupCallbackId);
+	g_group_callback_subscribed = false;
 	AsaApi::GetCommands().RemoveConsoleCommand(kReloadCommand);
 	AsaApi::GetCommands().RemoveRconCommand(kReloadCommand);
 	if (!g_registered_chat_command.empty())
