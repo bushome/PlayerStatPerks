@@ -1,0 +1,147 @@
+// PlayerStatPerks - commented configuration.
+//
+// This file holds the same settings and values as config.json, with an explanation on each one.
+// The plugin only reads config.json. Comments are allowed there too, so you can copy this file
+// over config.json if you prefer to keep the notes.
+//
+// After editing config.json, run PlayerStatPerks.Reload (RCON, or the in-game console as an
+// admin) to apply it without a restart. If the file has a mistake, the old settings stay active
+// and the error is written to ArkApi.log. Online players are recalculated on the next poll.
+{
+  // How often the plugin looks at players. All whole seconds.
+  "Timing": {
+    // How often online players are scanned. Each scan is cheap; 2 is fine for a full server.
+    "PollInterval_Seconds": 2,
+
+    // After a login or respawn, wait this long before applying, so the game has finished
+    // setting up the new character first.
+    "SpawnSettle_Seconds": 3,
+
+    // How often each player's groups are read again from Permissions. This is what picks up a
+    // timed group starting or expiring, or a group added/removed with the Permissions commands.
+    "GroupRecheck_Seconds": 30
+  },
+
+  // true: every group the player is in applies, lowest Priority first. Multipliers multiply
+  // together; for BaseStats the highest-priority group that sets a stat wins.
+  // false: only the single highest-priority group the player is in applies.
+  "StackGroups": true,
+
+  // One entry per Permissions group. "Default" matches every player.
+  // Group names are not case-sensitive.
+  "Groups": [
+    {
+      "Group": "Default",
+      "Priority": 1,
+
+      // Multiplies the amount a stat gains per level point. 1 = the server's normal gain
+      // (PerLevelStatsMultiplier_Player still applies on top). Cannot be negative.
+      // Changing a multiplier recalculates points already spent, so a character's stats
+      // follow their current groups without a respec.
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 1,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 1
+      },
+
+      // The stat's value before any level points, in the units the game shows.
+      // PlayerSpeed and PlayerCraftingSkill are percent (100 = 100%).
+      // 0 = leave this stat's base alone (the game's own base, with PlayerBaseStatMultipliers).
+      "BaseStats": {
+        "PlayerHealth": 100,
+        "PlayerStamina": 100,
+        "PlayerWeight": 150,
+        "PlayerFood": 100,
+        "PlayerOxygen": 100,
+        "PlayerWater": 100,
+        "PlayerSpeed": 100,
+        "PlayerCraftingSkill": 0,
+        "PlayerFortitude": 0
+      }
+    },
+    {
+      // Subscribers: 20% more weight per level point.
+      "Group": "Patrons",
+      "Priority": 2,
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 1.2,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 1
+      },
+      // All 0: keeps the bases from Default.
+      "BaseStats": {
+        "PlayerHealth": 0,
+        "PlayerStamina": 0,
+        "PlayerWeight": 0,
+        "PlayerFood": 0,
+        "PlayerOxygen": 0,
+        "PlayerWater": 0,
+        "PlayerSpeed": 0,
+        "PlayerCraftingSkill": 0,
+        "PlayerFortitude": 0
+      }
+    },
+    {
+      // Crafting perk: 2015% crafting skill base.
+      // Note: with StackGroups on, the 0.2 weight and 0 fortitude multipliers below also apply
+      // to anyone in this group (weight per level x0.2, no fortitude from level points).
+      "Group": "CraftingSkill",
+      "Priority": 3,
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 0.2,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 0
+      },
+      "BaseStats": {
+        "PlayerHealth": 0,
+        "PlayerStamina": 0,
+        "PlayerWeight": 0,
+        "PlayerFood": 0,
+        "PlayerOxygen": 0,
+        "PlayerWater": 0,
+        "PlayerSpeed": 0,
+        "PlayerCraftingSkill": 2015,
+        "PlayerFortitude": 0
+      }
+    }
+  ],
+
+  "Commands": {
+    // Chat command that shows a player their groups and effective values.
+    "ShowPerks": "/perks"
+  },
+
+  "Messages": {
+    // Sender name shown in chat.
+    "Sender": "Perks",
+
+    "ShowPerks": {
+      // true: reply in chat. false: on-screen notification in the colour R/G/B (0 to 1).
+      "SendInChat": true,
+      // Placeholders: {groups}; {PlayerHealth} ... {PlayerFortitude} for the combined multiplier;
+      // {PlayerHealth_Base} ... {PlayerFortitude_Base} for the configured base ("default" when 0).
+      "Message": "Groups: {groups}\nPer-level multipliers:\nHealth x{PlayerHealth}  Stamina x{PlayerStamina}  Weight x{PlayerWeight}\nFood x{PlayerFood}  Water x{PlayerWater}  Oxygen x{PlayerOxygen}\nSpeed x{PlayerSpeed}  Crafting x{PlayerCraftingSkill}  Fortitude x{PlayerFortitude}\nBase weight: {PlayerWeight_Base}  Base crafting: {PlayerCraftingSkill_Base}",
+      "R": 0,
+      "G": 1,
+      "B": 0
+    }
+  }
+}

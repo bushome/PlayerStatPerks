@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\PermissionsApi.h" />
+    <ClInclude Include="src\PerkLogic.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+    <None Include="vcpkg.json" />
+    <None Include="configs\config.json" />
+    <None Include="configs\config.commented.json" />
+    <None Include="configs\PluginInfo.json" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{F0B5016A-5FDB-422B-AA40-A64D07DB9207}</ProjectGuid>
+    <RootNamespace>PlayerStatPerks</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>PlayerStatPerks</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)out\</OutDir>
+    <IntDir>$(OutDir)$(Platform)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>true</VcpkgUseMD>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>PROJECT_NAME="$(ProjectName)";NDEBUG;_WINDOWS;_USRDLL;_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_SILENCE_ALL_CXX20_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(SolutionDir)extern\AsaApi\AsaApi\Core\Public\;$(SolutionDir)extern\AsaApi\AsaApi\Core\Public\API\UE\;$(ProjectDir)src\</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <!-- Permissions.dll lives in its own plugin folder and may load after this plugin; resolve it on first use instead of at load time. -->
+      <DelayLoadDLLs>Permissions.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <AdditionalDependencies>$(SolutionDir)extern\AsaApi\out_lib\AsaApi.lib;$(SolutionDir)lib\Permissions.lib;delayimp.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>if exist "$(TargetDir)$(TargetFileName).arkapi" del /q "$(TargetDir)$(TargetFileName).arkapi"</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy /y "$(TargetDir)$(TargetFileName)" "$(TargetDir)$(TargetFileName).arkapi"
+if not exist "$(TargetDir)PlayerStatPerks" mkdir "$(TargetDir)PlayerStatPerks"
+copy /y "$(TargetDir)$(TargetFileName)" "$(TargetDir)PlayerStatPerks\"
+copy /y "$(TargetDir)$(TargetName).pdb" "$(TargetDir)PlayerStatPerks\"
+copy /y "$(ProjectDir)configs\PluginInfo.json" "$(TargetDir)PlayerStatPerks\"
+copy /y "$(ProjectDir)configs\config.json" "$(TargetDir)PlayerStatPerks\"
+copy /y "$(ProjectDir)configs\config.commented.json" "$(TargetDir)PlayerStatPerks\"</Command>
+      <Message>Assembling out\PlayerStatPerks\ plugin folder</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <!-- Fail early with a readable message if the AsaApi submodule or its lib is missing. -->
+  <Target Name="CheckAsaApi" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(SolutionDir)extern\AsaApi\AsaApi\Core\Public\API\ARK\Ark.h')" Text="AsaApi headers not found. Run: git submodule update --init --recursive" />
+    <Error Condition="!Exists('$(SolutionDir)extern\AsaApi\out_lib\AsaApi.lib')" Text="AsaApi.lib not found in extern\AsaApi\out_lib. Build extern\AsaApi\AsaApi.sln (Release, x64), or copy AsaApi.lib from the Lib folder of the AsaApi release zip." />
+    <Error Condition="!Exists('$(SolutionDir)lib\Permissions.lib')" Text="lib\Permissions.lib not found. Copy it from the Permissions release (it is committed in the repository)." />
+  </Target>
+</Project>

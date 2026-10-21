@@ -1,0 +1,101 @@
+{
+  "Timing": {
+    "PollInterval_Seconds": 2,
+    "SpawnSettle_Seconds": 3,
+    "GroupRecheck_Seconds": 30
+  },
+  "StackGroups": true,
+  "Groups": [
+    {
+      "Group": "Default",
+      "Priority": 1,
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 1,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 1
+      },
+      "BaseStats": {
+        "PlayerHealth": 100,
+        "PlayerStamina": 100,
+        "PlayerWeight": 150,
+        "PlayerFood": 100,
+        "PlayerOxygen": 100,
+        "PlayerWater": 100,
+        "PlayerSpeed": 100,
+        "PlayerCraftingSkill": 0,
+        "PlayerFortitude": 0
+      }
+    },
+    {
+      "Group": "Patrons",
+      "Priority": 2,
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 1.2,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 1
+      },
+      "BaseStats": {
+        "PlayerHealth": 0,
+        "PlayerStamina": 0,
+        "PlayerWeight": 0,
+        "PlayerFood": 0,
+        "PlayerOxygen": 0,
+        "PlayerWater": 0,
+        "PlayerSpeed": 0,
+        "PlayerCraftingSkill": 0,
+        "PlayerFortitude": 0
+      }
+    },
+    {
+      "Group": "CraftingSkill",
+      "Priority": 3,
+      "Multipliers": {
+        "PlayerHealth": 1,
+        "PlayerStamina": 1,
+        "PlayerWeight": 0.2,
+        "PlayerFood": 1,
+        "PlayerOxygen": 1,
+        "PlayerWater": 1,
+        "PlayerSpeed": 1,
+        "PlayerCraftingSkill": 1,
+        "PlayerFortitude": 0
+      },
+      "BaseStats": {
+        "PlayerHealth": 0,
+        "PlayerStamina": 0,
+        "PlayerWeight": 0,
+        "PlayerFood": 0,
+        "PlayerOxygen": 0,
+        "PlayerWater": 0,
+        "PlayerSpeed": 0,
+        "PlayerCraftingSkill": 2015,
+        "PlayerFortitude": 0
+      }
+    }
+  ],
+  "Commands": {
+    "ShowPerks": "/perks"
+  },
+  "Messages": {
+    "Sender": "Perks",
+    "ShowPerks": {
+      "SendInChat": true,
+      "Message": "Groups: {groups}\nPer-level multipliers:\nHealth x{PlayerHealth}  Stamina x{PlayerStamina}  Weight x{PlayerWeight}\nFood x{PlayerFood}  Water x{PlayerWater}  Oxygen x{PlayerOxygen}\nSpeed x{PlayerSpeed}  Crafting x{PlayerCraftingSkill}  Fortitude x{PlayerFortitude}\nBase weight: {PlayerWeight_Base}  Base crafting: {PlayerCraftingSkill_Base}",
+      "R": 0,
+      "G": 1,
+      "B": 0
+    }
+  }
+}

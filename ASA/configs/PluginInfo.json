@@ -1,0 +1,9 @@
+{
+  "FullName": "PlayerStatPerks",
+  "Description": "Player base stats and per-level stat gains by permission group (permanent or timed, via Permissions)",
+  "Version": 1.0,
+  "MinApiVersion": 2.03,
+  "Dependencies": [
+    "Permissions"
+  ]
+}
