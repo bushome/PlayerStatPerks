@@ -179,9 +179,9 @@ namespace StatPerks
 			[](const GroupRule& a, const GroupRule& b) { return a.priority < b.priority; });
 
 		const auto& timing = root.value("Timing", nlohmann::json::object());
-		cfg.poll_interval_seconds = std::max(1, timing.value("PollInterval_Seconds", cfg.poll_interval_seconds));
-		cfg.spawn_settle_seconds = std::max(0, timing.value("SpawnSettle_Seconds", cfg.spawn_settle_seconds));
-		cfg.group_recheck_seconds = std::max(1, timing.value("GroupRecheck_Seconds", cfg.group_recheck_seconds));
+		cfg.poll_interval_seconds = (std::max)(1, timing.value("PollInterval_Seconds", cfg.poll_interval_seconds));
+		cfg.spawn_settle_seconds = (std::max)(0, timing.value("SpawnSettle_Seconds", cfg.spawn_settle_seconds));
+		cfg.group_recheck_seconds = (std::max)(1, timing.value("GroupRecheck_Seconds", cfg.group_recheck_seconds));
 
 		const auto& cmds = root.value("Commands", nlohmann::json::object());
 		cfg.perks_command = cmds.value("ShowPerks", cfg.perks_command);
