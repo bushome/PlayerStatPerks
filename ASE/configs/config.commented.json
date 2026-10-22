@@ -20,8 +20,10 @@
     // How often each player's groups are read again from Permissions. The ASE Permissions plugin
     // does not report group changes, so this is the delay both before a group added with
     // permissions.addtimed (e.g. from an ArkShop kit) takes effect and before a timed group
-    // expiring is noticed. Keep it short for short timed perks. Reading groups is cheap.
-    "GroupRecheck_Seconds": 10
+    // expiring is noticed. 2 matches PollInterval_Seconds, so groups are read on every poll and a
+    // bought perk applies within about 2 seconds. Reading groups is an in-memory lookup in
+    // Permissions (no database query), so this is cheap even on a full server.
+    "GroupRecheck_Seconds": 2
   },
 
   // true: every group the player is in applies, lowest Priority first. Multipliers multiply
