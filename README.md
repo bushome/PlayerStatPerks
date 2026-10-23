@@ -42,7 +42,7 @@ git submodule update --init --recursive
 ```
 
 The perk logic (`src/PerkLogic.h`), the tests and the configs are the same in both folders; only
-`src/Main.cpp`, `src/PermissionsApi.h`, `lib/Permissions.lib` and the project files differ by API. One
+`src/Main.cpp`, `src/PermissionsApi.h` and the project files differ by API. One
 behavioural difference: the ASA Permissions plugin reports group changes, so a newly added group applies
 within a couple of seconds there; the ASE config instead re-reads groups on every poll for the same result. Build and install steps
 are in each folder's README.

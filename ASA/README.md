@@ -38,8 +38,8 @@ git submodule update --init --recursive
 
 `fmt` comes from vcpkg through the manifest in `vcpkg.json` (Visual Studio's bundled vcpkg; triplet
 `x64-windows-static-md`). AsaApi's `UnrealString.h` includes `fmt/format.h`, so it has to be on the include
-path. `lib\Permissions.lib` is the Permissions plugin's import library and is committed in the repository.
-`Permissions.dll` is delay-loaded, because AsaApi may load this plugin before Permissions.
+path. Permissions is not linked at build time: the plugin looks its functions up in the loaded
+`Permissions.dll` at runtime (`src\PermissionsApi.h`), so no Permissions import library is needed.
 
 The result is `out\PlayerStatPerks\`, containing `PlayerStatPerks.dll`, its `.pdb`, `PluginInfo.json`,
 `config.json` and `config.commented.json`.
@@ -132,8 +132,11 @@ current groups without a respec.
 
 - **`Config not loaded: ...` at startup.** The message says what is wrong. Fix the file and run
   `PlayerStatPerks.Reload`. Until then player stats are left alone.
-- **The plugin fails to load with error 126.** `Permissions.dll` could not be found when it was first
-  needed. Check Permissions is installed in its own plugin folder and loads without errors.
+- **`Permissions.dll is loaded but does not export ...`.** The installed Permissions build doesn't have
+  the function under the name this plugin expects, so player stats are left alone. Compare with
+  `dumpbin /exports Permissions.dll | findstr GetPlayerGroups` and update the name in `src\PermissionsApi.h`.
+- **No `Applied` lines at all.** Check Permissions is installed in its own plugin folder and loads without
+  errors; until it is loaded this plugin waits.
 - **Stats don't change after a timed group is added.** `ArkApi.log` should show `Listening for
   Permissions group changes` once after startup; without it, changes are only seen on the recheck. Check
   `/perks` lists the group. If it doesn't, the player is not in that group as far as Permissions knows.
@@ -167,8 +170,7 @@ logic_tests.exe configs\config.commented.json --shipped
 |---|---|
 | `src\Main.cpp` | Player polling, stat application, `/perks`, reload commands. |
 | `src\PerkLogic.h` | Config parsing, group resolution and stacking, unit conversion. No game dependencies. |
-| `src\PermissionsApi.h` | The Permissions export this plugin uses (`GetPlayerGroups`). |
-| `lib\Permissions.lib` | Import library for `Permissions.dll`. |
+| `src\PermissionsApi.h` | Runtime lookup of the Permissions functions this plugin uses (`GetPlayerGroups` and the group-change notification). |
 | `configs\config.json` | Default configuration. |
 | `configs\config.commented.json` | The same configuration with every setting explained. Not read by the plugin. |
 | `configs\PluginInfo.json` | Plugin metadata read by AsaApi. |

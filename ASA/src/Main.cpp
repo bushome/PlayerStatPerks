@@ -76,18 +76,38 @@ namespace
 			g_changed_players.insert(eos_id.ToString());
 	}
 
-	// Permissions.dll is delay-loaded and AsaApi may load this plugin first, so nothing may call into
-	// it until it is actually in the process.
-	bool PermissionsLoaded()
+	// Permissions functions are looked up in Permissions.dll at runtime (see PermissionsApi.h). AsaApi may
+	// load this plugin before Permissions, so this returns nullptr until they are available.
+	const PermissionsApi::Functions* Permissions()
 	{
-		return GetModuleHandleW(L"Permissions.dll") != nullptr;
+		static bool reported = false;
+		const PermissionsApi::Result result = PermissionsApi::Resolve();
+		if (result.status == PermissionsApi::Status::Ready)
+			return result.functions;
+		if (result.status == PermissionsApi::Status::MissingExport && !reported)
+		{
+			reported = true;
+			Log::GetLog()->error("Permissions.dll is loaded but does not export {}; player stats are left alone",
+				PermissionsApi::kGetPlayerGroups);
+		}
+		return nullptr;
 	}
 
-	void SubscribeGroupCallback()
+	void SubscribeGroupCallback(const PermissionsApi::Functions& permissions)
 	{
-		if (g_group_callback_subscribed || !PermissionsLoaded())
+		static bool reported = false;
+		if (g_group_callback_subscribed)
 			return;
-		Permissions::SubscribePermissionGroupUpdatedCallback(kGroupCallbackId, &OnPermissionGroupUpdated);
+		if (permissions.subscribe == nullptr)
+		{
+			if (!reported)
+			{
+				reported = true;
+				Log::GetLog()->warn("This Permissions build has no group-change notification; changes are seen on the recheck");
+			}
+			return;
+		}
+		permissions.subscribe(kGroupCallbackId, &OnPermissionGroupUpdated);
 		g_group_callback_subscribed = true;
 		Log::GetLog()->info("Listening for Permissions group changes");
 	}
@@ -182,10 +202,10 @@ namespace
 	// Groups
 	// ------------------------------------------------------------------------------------------
 
-	std::vector<std::string> GetGroups(const FString& eos_id)
+	std::vector<std::string> GetGroups(const PermissionsApi::Functions& permissions, const FString& eos_id)
 	{
 		std::vector<std::string> out;
-		const TArray<FString> groups = Permissions::GetPlayerGroups(eos_id);
+		const TArray<FString> groups = permissions.get_player_groups(eos_id);
 		for (const FString& group : groups)
 			out.push_back(group.ToString());
 		return out;
@@ -289,7 +309,7 @@ namespace
 	// Polling
 	// ------------------------------------------------------------------------------------------
 
-	void Poll()
+	void Poll(const PermissionsApi::Functions& permissions)
 	{
 		UWorld* world = AsaApi::GetApiUtils().GetWorld();
 		if (world == nullptr)
@@ -345,7 +365,7 @@ namespace
 			if (need_apply || groups_changed || g_clock - state.last_group_check >= g_settings.group_recheck_seconds)
 			{
 				state.last_group_check = g_clock;
-				Effective eff = Resolve(g_settings, GetGroups(eos_id));
+				Effective eff = Resolve(g_settings, GetGroups(permissions, eos_id));
 				if (eff.Signature() != state.signature)
 					need_apply = true;
 				state.effective = std::move(eff);
@@ -373,10 +393,11 @@ namespace
 
 		try
 		{
-			if (!PermissionsLoaded())
+			const PermissionsApi::Functions* permissions = Permissions();
+			if (permissions == nullptr)
 				return;   // nothing to resolve groups with yet
-			SubscribeGroupCallback();
-			Poll();
+			SubscribeGroupCallback(*permissions);
+			Poll(*permissions);
 		}
 		catch (const std::exception& exception)
 		{
@@ -390,11 +411,12 @@ namespace
 
 	void PerksChat(AShooterPlayerController* player_controller, FString* /*message*/, int /*mode*/, int /*platform*/)
 	{
-		if (player_controller == nullptr || !g_settings_loaded || !PermissionsLoaded())
+		const PermissionsApi::Functions* permissions = Permissions();
+		if (player_controller == nullptr || !g_settings_loaded || permissions == nullptr)
 			return;
 
 		const FString eos_id = AsaApi::IApiUtils::GetEOSIDFromController(player_controller);
-		const Effective eff = Resolve(g_settings, GetGroups(eos_id));
+		const Effective eff = Resolve(g_settings, GetGroups(*permissions, eos_id));
 		const FString text = ToFString(FormatPerks(g_settings.perks_message.text, eff));
 		const Message& message = g_settings.perks_message;
 
@@ -463,8 +485,13 @@ extern "C" __declspec(dllexport) void Plugin_Init()
 extern "C" __declspec(dllexport) void Plugin_Unload()
 {
 	AsaApi::GetCommands().RemoveOnTimerCallback(kTimerId);
-	if (g_group_callback_subscribed && PermissionsLoaded())
-		Permissions::UnSubscribePermissionGroupUpdatedCallback(kGroupCallbackId);
+	if (g_group_callback_subscribed)
+	{
+		const PermissionsApi::Result permissions = PermissionsApi::Resolve();
+		if (permissions.functions != nullptr && permissions.functions->unsubscribe != nullptr
+			&& GetModuleHandleW(L"Permissions.dll") != nullptr)
+			permissions.functions->unsubscribe(kGroupCallbackId);
+	}
 	g_group_callback_subscribed = false;
 	AsaApi::GetCommands().RemoveConsoleCommand(kReloadCommand);
 	AsaApi::GetCommands().RemoveRconCommand(kReloadCommand);

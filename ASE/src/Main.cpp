@@ -63,11 +63,21 @@ namespace
 	};
 	std::unordered_map<uint64, PlayerState> g_players;   // key: Steam ID
 
-	// Permissions.dll is delay-loaded and ArkApi may load this plugin first, so nothing may call into
-	// it until it is actually in the process.
-	bool PermissionsLoaded()
+	// GetPlayerGroups is looked up in Permissions.dll at runtime (see PermissionsApi.h). ArkApi may load
+	// this plugin before Permissions, so this returns nullptr until it is available.
+	PermissionsApi::GetPlayerGroupsFn PermissionsGetPlayerGroups()
 	{
-		return GetModuleHandleW(L"Permissions.dll") != nullptr;
+		static bool reported = false;
+		const PermissionsApi::Result result = PermissionsApi::Resolve();
+		if (result.status == PermissionsApi::Status::Ready)
+			return result.get_player_groups;
+		if (result.status == PermissionsApi::Status::MissingExport && !reported)
+		{
+			reported = true;
+			Log::GetLog()->error("Permissions.dll is loaded but does not export {}; player stats are left alone",
+				PermissionsApi::kGetPlayerGroups);
+		}
+		return nullptr;
 	}
 
 	std::string JoinGroups(const Effective& eff)
@@ -160,10 +170,10 @@ namespace
 	// Groups
 	// ------------------------------------------------------------------------------------------
 
-	std::vector<std::string> GetGroups(uint64 steam_id)
+	std::vector<std::string> GetGroups(PermissionsApi::GetPlayerGroupsFn get_player_groups, uint64 steam_id)
 	{
 		std::vector<std::string> out;
-		const TArray<FString> groups = Permissions::GetPlayerGroups(steam_id);
+		const TArray<FString> groups = get_player_groups(steam_id);
 		for (const FString& group : groups)
 			out.push_back(group.ToString());
 		return out;
@@ -268,7 +278,7 @@ namespace
 	// Polling
 	// ------------------------------------------------------------------------------------------
 
-	void Poll()
+	void Poll(PermissionsApi::GetPlayerGroupsFn get_player_groups)
 	{
 		UWorld* world = ArkApi::GetApiUtils().GetWorld();
 		if (world == nullptr)
@@ -313,7 +323,7 @@ namespace
 			if (need_apply || g_clock - state.last_group_check >= g_settings.group_recheck_seconds)
 			{
 				state.last_group_check = g_clock;
-				Effective eff = Resolve(g_settings, GetGroups(steam_id));
+				Effective eff = Resolve(g_settings, GetGroups(get_player_groups, steam_id));
 				if (eff.Signature() != state.signature)
 					need_apply = true;
 				state.effective = std::move(eff);
@@ -341,9 +351,10 @@ namespace
 
 		try
 		{
-			if (!PermissionsLoaded())
+			const PermissionsApi::GetPlayerGroupsFn get_player_groups = PermissionsGetPlayerGroups();
+			if (get_player_groups == nullptr)
 				return;   // nothing to resolve groups with yet
-			Poll();
+			Poll(get_player_groups);
 		}
 		catch (const std::exception& exception)
 		{
@@ -357,11 +368,12 @@ namespace
 
 	void PerksChat(AShooterPlayerController* player_controller, FString* /*message*/, EChatSendMode::Type /*mode*/)
 	{
-		if (player_controller == nullptr || !g_settings_loaded || !PermissionsLoaded())
+		const PermissionsApi::GetPlayerGroupsFn get_player_groups = PermissionsGetPlayerGroups();
+		if (player_controller == nullptr || !g_settings_loaded || get_player_groups == nullptr)
 			return;
 
 		const uint64 steam_id = ArkApi::IApiUtils::GetSteamIdFromController(player_controller);
-		const Effective eff = Resolve(g_settings, GetGroups(steam_id));
+		const Effective eff = Resolve(g_settings, GetGroups(get_player_groups, steam_id));
 		const FString text = ToFString(FormatPerks(g_settings.perks_message.text, eff));
 		const Message& message = g_settings.perks_message;
 
