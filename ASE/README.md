@@ -43,7 +43,8 @@ at build time: the plugin looks `GetPlayerGroups` up in the loaded `Permissions.
 (`src\PermissionsApi.h`), so no Permissions import library is needed.
 
 The result is `out\PlayerStatPerks\`, containing `PlayerStatPerks.dll`, its `.pdb`, `PluginInfo.json`,
-`config.json` and `config.commented.json`.
+`config.json`, `config.commented.json` and `THIRD-PARTY-NOTICES.md`. Keep the notices file with the DLL
+when redistributing the plugin.
 
 Build against the ArkServerApi version your servers run. To move to a different release, check out that tag
 in the submodule and commit the new submodule pointer:
@@ -173,6 +174,7 @@ logic_tests.exe configs\config.commented.json --shipped
 | `src\PermissionsApi.h` | Runtime lookup of the Permissions function this plugin uses (`GetPlayerGroups`). |
 | `configs\config.json` | Default configuration. |
 | `configs\config.commented.json` | The same configuration with every setting explained. Not read by the plugin. |
+| `..\THIRD-PARTY-NOTICES.md` | License notice for the nlohmann/json code compiled into the DLL. Copied into the build output. |
 | `configs\PluginInfo.json` | Plugin metadata read by ArkApi. |
 | `tests\logic_tests.cpp` | Stand-alone tests for `PerkLogic.h` and the shipped config. |
 | `extern\AseApi` | ArkServerApi submodule the plugin builds against. |

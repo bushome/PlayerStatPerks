@@ -78,7 +78,8 @@ copy /y "$(TargetDir)$(TargetFileName)" "$(TargetDir)PlayerStatPerks\"
 copy /y "$(TargetDir)$(TargetName).pdb" "$(TargetDir)PlayerStatPerks\"
 copy /y "$(ProjectDir)configs\PluginInfo.json" "$(TargetDir)PlayerStatPerks\"
 copy /y "$(ProjectDir)configs\config.json" "$(TargetDir)PlayerStatPerks\"
-copy /y "$(ProjectDir)configs\config.commented.json" "$(TargetDir)PlayerStatPerks\"</Command>
+copy /y "$(ProjectDir)configs\config.commented.json" "$(TargetDir)PlayerStatPerks\"
+copy /y "$(SolutionDir)..\THIRD-PARTY-NOTICES.md" "$(TargetDir)PlayerStatPerks\"</Command>
       <Message>Assembling out\PlayerStatPerks\ plugin folder</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
