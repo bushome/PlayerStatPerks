@@ -20,6 +20,10 @@ There are no gameplay hooks. ArkApi's one-second timer drives a scan of the onli
 3. when the game has overwritten the values this plugin wrote.
 
 For each managed stat the plugin writes the base value, the per-level gain and the resulting maximum.
+The maximum is calculated the way the game does it: (base + points x per-level gain x
+`PerLevelStatsMultiplier_Player`) x `PlayerBaseStatMultipliers`, where a configured `BaseStats` value is
+already the level-1 value and is not multiplied again. A `Game.ini` multiplier that is not set, or set
+to 0, counts as 1, as it does in the game.
 Everything is computed from the character class defaults and the server's `PlayerBaseStatMultipliers` and
 `PerLevelStatsMultiplier_Player`, never from the live values, so applying again cannot stack on itself
 and a character never keeps a perk after the group that gave it expires. Pool stats (health, stamina,

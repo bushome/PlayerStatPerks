@@ -238,13 +238,21 @@ namespace
 			const StatInfo& info = Stats()[s];
 			const int i = info.game_index;
 
-			const double vanilla_base = static_cast<double>(default_max[i]) * ini_base[i];
+			// Game.ini entries that are not set read as 0 here, and the game treats 0 as "use the default"
+			// of 1 (an unset PerLevelStatsMultiplier_Player[9] still gives speed per point). Do the same, or
+			// stats without a Game.ini line would be recomputed with a multiplier of 0.
+			const double base_multiplier = ini_base[i] > 0.f ? ini_base[i] : 1.0;
+			const double per_level_multiplier = ini_per_level[i] > 0.f ? ini_per_level[i] : 1.0;
+			const double vanilla_base = static_cast<double>(default_max[i]) * base_multiplier;
 			const double base = eff.base_stats[s]
 				? ToEngineBase(static_cast<Stat>(s), *eff.base_stats[s], default_max[i])
 				: vanilla_base;
 			const double gain = static_cast<double>(default_gain[i]) * eff.multipliers[s];
 			const double spent = static_cast<double>(static_cast<unsigned char>(points[i]));
-			const double new_max = base + spent * gain * ini_per_level[i];
+			// The game scales the whole stat by PlayerBaseStatMultipliers, level points included:
+			// (100 + 12 x 10 x 1.75) x 1.5 = 465 weight, verified against the game's own value on a transfer.
+			// A configured BaseStats value is the level-1 value as shown, so it is not multiplied again.
+			const double new_max = base + spent * gain * per_level_multiplier * base_multiplier;
 
 			const float old_max = max_values[i];
 			base_values[i] = static_cast<float>(base);
