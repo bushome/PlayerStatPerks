@@ -48,3 +48,8 @@ The perk logic (`src/PerkLogic.h`), the tests and the configs are the same in bo
 behavioural difference: the ASA Permissions plugin reports group changes, so a newly added group applies
 within a couple of seconds there; the ASE config instead re-reads groups on every poll for the same result. Build and install steps
 are in each folder's README.
+
+## Development
+
+Developed with AI assistance (Claude). Every change was reviewed and tested on a dedicated test server
+before going live.
