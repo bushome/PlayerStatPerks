@@ -182,7 +182,7 @@ logic_tests.exe configs\config.commented.json --shipped
 | `src\PermissionsApi.h` | Runtime lookup of the Permissions functions this plugin uses (`GetPlayerGroups` and the group-change notification). |
 | `configs\config.json` | Default configuration. |
 | `configs\config.commented.json` | The same configuration with every setting explained. Not read by the plugin. |
-| `..\THIRD-PARTY-NOTICES.md` | License notice for the nlohmann/json code compiled into the DLL. Copied into the build output. |
+| `..\THIRD-PARTY-NOTICES.md` | License notices for nlohmann/json, spdlog and the fmt copy bundled with spdlog, compiled into the DLL. Copied into the build output. |
 | `configs\PluginInfo.json` | Plugin metadata read by AsaApi. |
 | `tests\logic_tests.cpp` | Stand-alone tests for `PerkLogic.h` and the shipped config. |
 | `vcpkg.json` | vcpkg manifest (fmt). |
