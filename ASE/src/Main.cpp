@@ -230,7 +230,8 @@ namespace
 		float* base_values = status->BaseLevelMaxStatusValuesField()();
 		float* gain_values = status->AmountMaxGainedPerLevelUpValueField()();
 		float* current_values = status->CurrentStatusValuesField()();
-		const char* points = status->NumberOfLevelUpPointsAppliedField()();   // char on ASE, unsigned on ASA
+		// char in AseApi 3.56, unsigned char in newer AseApi and on ASA: read as unsigned either way
+		const unsigned char* points = reinterpret_cast<const unsigned char*>(status->NumberOfLevelUpPointsAppliedField()());
 
 		const Effective& eff = state.effective;
 		for (int s = 0; s < StatCount; ++s)
